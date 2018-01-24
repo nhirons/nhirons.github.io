@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Nicholas Hirons</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <style>
+      body {
+        padding-top: 54px;
+      }
+      @media (min-width: 992px) {
+        body {
+          padding-top: 56px;
+        }
+      }
+
+    </style>
+
+  </head>
+
+  <body>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
+      <div class="container">
+        <a class="navbar-brand" href="#">Nicholas Hirons</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarResponsive">
+          <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="/">Home
+              </a>
+            </li>
+            <li class="nav-item dropdown active">
+              <a class="nav-link dropdown-toggle" href="#" id="dropdown01" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Projects
+                <span class="sr-only">(current)</span>
+              </a>
+              <div class="dropdown-menu" aria-labelledby="dropdown01">
+                <a class="dropdown-item" href="/projects/">View all projects</a>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item" href="/projects/energydisaggregation">Energy Disaggregation</a>
+                <a class="dropdown-item" href="/projects/thebrownlowdownlow">The Brownlow Downlow</a>
+                <a class="dropdown-item" href="/projects/carserviceoperations">Car Service Operations</a>
+              </div>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/resume">Resume</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/about">About</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Page Content -->
+    <main role="main">
+
+      <!-- Main jumbotron for a primary marketing message or call to action -->
+      <div class="jumbotron">
+        <div class="container">
+          <div class="col-md-8 mx-auto">
+            <h1 class="display-4">The Brownlow Downlow.</h1>
+            <p>Predicting the Most Valuable Player of the Australian Football League.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="container">
+        <div class="col-md-8 mx-auto">
+          <h2>Introduction</h2>
+          <p>In the Australian Football League, the Brownlow Medal is awarded to the most valuable player for the year. At the end of each game, the field umpires award "votes" to the players they regard as the top players for that game: 3 votes to the best player, 2 votes to the 2nd best player and 1 vote to the 3rd best player. At the end of the regular season, these votes are revealed and the Brownlow Medal is awarded to the player with the most votes.</p>
+          <h2>Results in brief</h2>
+          <figure class="text-center">
+            <img src="img/2015-top-ten-densities.png" class="mx-auto" alt="Ordinal regression" />
+            <figcaption class="figure-caption">Predicted vote densities for 2015 test data.</figcaption>
+          </figure>
+          <p>We've established a rock solid baseline using a balanced bagging ensemble approach with a random forest as our base model. Trained and validated on 2002-2014, we correctly predicted 5 of the top 7 in 2015 test data. Definitely some outliers in there but it will provide a good benchmark going forward as we add better validation methods, try new approaches and integrate with betting market outcomes.</p>
+          <table class="table">
+            <thead class="thead-inverse">
+              <tr>
+                <th>Player</th>
+                <th>Team</th>
+                <th>Predicted votes</th>
+                <th>Actual votes</th>
+                <th>Predicted rank</th>
+                <th>Actual rank</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Sam Mitchell</td><td>HW</td><td>26.7</td><td>26</td><td>1</td><td>3</td></tr>
+             <tr><td>Nat Fyfe</td><td>FR</td><td>26.2</td><td>31</td><td>2</td><td>1</td></tr>
+             <tr><td>Andrew Gaff</td><td>WC</td><td>26.0</td><td>17</td><td>3</td><td>12</td></tr>
+             <tr><td>Dan Hannebery</td><td>SY</td><td>24.6</td><td>24</td><td>4</td><td>5</td></tr>
+             <tr><td>Matt Priddis</td><td>WC</td><td>23.9</td><td>28</td><td>5</td><td>2</td></tr>
+             <tr><td>Lachie Neale</td><td>FR</td><td>23.6</td><td>10</td><td>6</td><td>32</td></tr>
+             <tr><td>Josh Kennedy</td><td>SY</td><td>22.3</td><td>25</td><td>7</td><td>4</td></tr>
+             <tr><td>Scott Thompson</td><td>AD</td><td>21.0</td><td>12</td><td>8</td><td>25</td></tr>
+             <tr><td>David Mundy</td><td>FR</td><td>20.9</td><td>19</td><td>9</td><td>8</td></tr>
+             <tr><td>Trent Cotchin</td><td>RI</td><td>20.7</td><td>17</td><td>10</td><td>12</td></tr>
+           </tbody></table>
+          <h2>Framing the problem</h2>
+          <p>Predicting the winner of the Brownlow medal can best be viewed as a "learning to rank" problem. Given a game (with 2 teams of typically 22 players), we want to predict the 1st, 2nd and 3rd best players. </p>
+          <p>It combines elements of classification, in that we have discrete target variables of "1st (3 votes)", "2nd (2 votes)", "3rd (1 vote)" and "0 votes", with regression, in that these categories still have a value and a meaningful, ordered relationship with one another.</p>
+          <p>Furthermore, given the value of these models to betting (in Australia, sports wagering is legal and AFL/Brownlow markets are highly liquid), we don't simply want to predict hard ranks to players for each game. It would be ideal if we could model "soft" rankings with uncertainty, to establish implied betting odds and expected return on investment for various markets.</p>
+          <h2>Approaches</h2>
+          <h3>Ordinal regression</h3>
+          <figure class="text-center">
+            <img src="img/ordinal_1.png" class="mx-auto" alt="Ordinal regression" />
+            <figcaption class="figure-caption">Example ordinal classes in 2D ordinal regression.</figcaption>
+          </figure>
+          <p>While modelling this partial ordering can be done directly using ordinal regression models, there are 3 key drawbacks to these models for our problem:</p>
+          <ol style="list-style: decimal inside;">
+            <li>There is no constraint on multiple players in a given game being awarded a specific vote (e.g. 2 players could be assigned "3 votes" during inference).</li>
+            <li>For our data, the "1 vote" category, and to a slightly lesser extent the "2 vote" category, are incredibly noisy. Intuitively, this makes sense, as the "best player" is usually much easier to identify or pick than the "third best player".  </li>
+            <li>Some approaches (SVMs) assign hard votes, while other approaches (logistic regression) don't have easily interpretable soft votes; simply multiplying each vote by the probability of a player obtaining that vote leads to similar issues to those in (1).</li>
+          </ol>
+          <h3>Binary classification on "3 votes"</h3>
+          <p> Another option would be to train a model only on the "3 votes" category:</p>
+          <ol style="list-style: decimal inside;">
+            <li>Train some probabilistic classification model</li>
+            <li>Infer probabilities of "3 votes" classification for each player in a given game</li>
+            <li>Map the highest probability to "3 votes", the 2nd highest to "2 votes", the 3rd highest to "1 vote" and the rest to "0 votes"
+            </li>
+            <li>Select model and hyperparameters according to relevant metrics on the validation set (e.g. rank MSE, F1-score for each class and globally)
+            </li>
+          </ol>
+          <p>There are two key drawbacks to this approach:</p>  
+          <ol style="list-style: decimal inside;">
+            <li>Votes are hard assigned (i.e. no implied uncertainty)</li>
+            <li>Class imbalance may impact performance of models - only 1 in ~44 (e.g. ~2%) of players are in the "3 vote" category for each game</li>
+          </ol>
+          <p>
+          While there are a number of ways to combat these drawbacks (some of which I believe are superior to the below and will explore at a later date), I propose a fairly simple solution to establish a solid baseline below.</p>
+          <h3>A bagging-based approach</h3>
+          <p>
+          While there are <a href="https://svds.com/learning-imbalanced-classes/">many methods</a> to combat class imbalance, a convenient solution for our problem is a balanced bagging approach (Wallace, Small, Brodley and Trikalinos).</p>
+          <figure class="text-center">
+            <img src="img/ImbalancedClasses1.png" class="img-fluid w-50 mx-auto" alt="Imbalanced classes" />
+            <figcaption class="figure-caption">A poor separation of classes due to class imbalance.</figcaption>
+          </figure>
+          <figure class="text-center">
+            <img src="img/ImbalancedClasses2.png" class="img-fluid w-50 mx-auto" alt="Imbalanced classes" />
+            <figcaption class="figure-caption">Better separation, but high variance, from undersampled bootstrapping.</figcaption>
+          </figure>
+          <figure class="text-center">
+            <img src="img/ImbalancedClasses3.png" class="img-fluid w-50 mx-auto" alt="Imbalanced classes" />
+            <figcaption class="figure-caption">Aggregating the balanced bootstrap models (note any base model can be used).</figcaption>
+          </figure>
+          <p>
+           This allows us to reduce the variance of individual bagged models by taking the average of predicted votes, while also using the entire set of predictions as a proxy for understanding the distribution of possible vote outcomes:
+          </p>
+          <ol style="list-style: decimal inside;">
+            <li>Use 2015 as test data, with 2002-2014 as training and valdiation data.</li>
+            <li>Split train/val 0.75/0.25 by game (this is key to inferring ranks)</li>
+            <li>Within the training data, train 100 models on 100 bootstrap samples on the binary classification of "3 vote", where the majority class (non-3 vote) is undersampled.</li>
+            <li>On the validation data, infer votes based on the ranks of P(3 vote) within each game.</li>
+            <li>Choose best model and hyperparameters based on validation set performance.</li>
+          </ol>
+
+          <h2>Input variables</h2>
+          <p>We used commonly available player statistics for each game - possessions (kicks/handballs, contested/uncontested), marks, goals, behinds, goal assists, one percenters etc. All individual stats were normalized within a game, since these stats are judged by umpires within the context of that game. We also included whether a player's team won the game or not, again normalized within each game for consistency. This allowed us to accurately compare the performance of models that are sensitive to scaling vs. those that aren't.</p>
+          <h2>Metrics</h2>
+          <p>After inferring votes, we examined learning curves as well as confusion matrices to assess the performance of our models.</p>
+          <figure class="text-center">
+            <img src="img/average_mse_by_samples.png" class="img-fluid w-50 mx-auto" alt="MSE learning curve" />
+            <figcaption class="figure-caption">Learning curve: Running average vote MSE by sample.</figcaption>
+          </figure>
+          <p>
+            While the above learning curve was for our optimal random forest model, the same general trend was true for all models examined: better accuracy and lower variance than individual undersampled bootstrap models.
+          </p>
+          <figure class="text-center">
+            <img src="img/raw_confusion_matrix.png" class="img-fluid w-50 mx-auto" alt="Confusion matrix" />
+            <figcaption class="figure-caption">Vote confusion matrix for all bootstrapped models on the validation set.</figcaption>
+          </figure>
+          <p>
+            Similarly, the general trend in confusion matrices was the same: models performed well for "0 votes", reasonably well for "3 votes", but not well for "1 vote" and "2 votes". This is something we can definitely improve on in the future.
+          </p>
+          <p>While this is useful for examining the performance of individual models (monitoring bias/variance, accuracy), it is challenging to compare many different models and hyperparameters at once. We instead chose summary statistics closely related to the above:</p>
+          <ol style="list-style: decimal inside;">
+            <li>Vote MSE by vote category and on average (arithmetic, geometric and global)</li>
+            <li>F1-score by vote category and on average (arithmetic, geometric and global)</li>
+          </ol>
+          Note that because of the way we have done inference by only allocating votes in the exact same proportion as the ground truths, in each vote category F1-score = precision = recall.
+          <h2>Model validation</h2>
+          <p>
+          We performed hyperparameter grid search across a number of classification models with a probabilistic output (required for game ranking and votes): Gaussian Naive Bayes, Logistic Regression, Decision Trees, Random Forests. In the future it would be great to incorporate SVMs by ranking players within a game by distance to the separating hyperplane, but given we are just setting a baseline right now. Given resource constraints (i.e. my MacBook Air), we used a reduced 30 bootstrap samples to compare models. The top two performing models on the validation set are below:
+          </p>
+          <ol style="list-style: decimal inside;">
+            <li>Logistic Regression with L2 penalty and C = 1</li>
+            <li>Random Forest with 30 trees, max depth of 30, sqrt max features, min samples per split of 10, min samples per leaf of 1, bootstrap on</li>
+          </ol>
+          <figure class="text-center">
+            <img src="img/f1-score.png" class="img-fluid w-50 mx-auto" alt="F1-score" />
+            <figcaption class="figure-caption">F1-score comparison of top two models.</figcaption>
+          </figure>
+          <figure class="text-center">
+            <img src="img/mse-score.png" class="img-fluid w-50 mx-auto" alt="F1-score" />
+            <figcaption class="figure-caption">MSE comparison of top two models.</figcaption>
+          </figure>
+          <p>We ultimately chose the random forest model. While it generally underperformed in the F1 score (i.e. it had a higher misclassification rate), it outperformed in MSE. This implies that even though the RF model had more misclassifications in aggregate, the misclassifications were, on average, closer to the ground truth (especially on 1 and 2 votes).</p>
+          <h2>Test set results</h2>
+          <figure class="text-center">
+            <img src="img/2015-top-twenty-densities.png" class="img-fluid w-50 mx-auto" alt="Predicted top 20, 2015" />
+            <figcaption class="figure-caption">Predicted vote densities for 2015 test data.</figcaption>
+          </figure>
+          <figure class="text-center">
+            <img src="img/test_confusion_matrix.png" class="img-fluid w-50 mx-auto" alt="2015 test set confusion matrix." />
+            <figcaption class="figure-caption">2015 test set confusion matrix.</figcaption>
+          </figure>
+          <table class="table">
+            <thead class="thead-inverse">
+              <tr>
+                <th>Player</th>
+                <th>Team</th>
+                <th>Predicted votes</th>
+                <th>Actual votes</th>
+                <th>Predicted rank</th>
+                <th>Actual rank</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Sam Mitchell</td><td>HW</td><td>26.7</td><td>26</td><td>1</td><td>3</td></tr>
+             <tr><td>Nat Fyfe</td><td>FR</td><td>26.2</td><td>31</td><td>2</td><td>1</td></tr>
+             <tr><td>Andrew Gaff</td><td>WC</td><td>26.0</td><td>17</td><td>3</td><td>12</td></tr>
+             <tr><td>Dan Hannebery</td><td>SY</td><td>24.6</td><td>24</td><td>4</td><td>5</td></tr>
+             <tr><td>Matt Priddis</td><td>WC</td><td>23.9</td><td>28</td><td>5</td><td>2</td></tr>
+             <tr><td>Lachie Neale</td><td>FR</td><td>23.6</td><td>10</td><td>6</td><td>32</td></tr>
+             <tr><td>Josh Kennedy</td><td>SY</td><td>22.3</td><td>25</td><td>7</td><td>4</td></tr>
+             <tr><td>Scott Thompson</td><td>AD</td><td>21.0</td><td>12</td><td>8</td><td>25</td></tr>
+             <tr><td>David Mundy</td><td>FR</td><td>20.9</td><td>19</td><td>9</td><td>8</td></tr>
+             <tr><td>Trent Cotchin</td><td>RI</td><td>20.7</td><td>17</td><td>10</td><td>12</td></tr>
+           </tbody></table>
+
+          <h2>What's next?</h2>
+          <ol style="list-style: decimal inside;">
+            <li>A more comprehensive validation process. Given that voting trends change over time, it is likely that some voting signals decay. We will compare different sliding lookback windows on the training/validation set.</li>
+            <li>Roughly balanced bagging, a method more aligned to the original bagging technique that samples the majority class based on a negative binomial distribution.</li>
+            <li>Single model (gradient boosting, neural nets), simulation based approaches (e.g. a generalization of the Gumbel-max trick appears promising).</li>
+          </ol>
+
+
+        </div>
+
+        <hr>
+
+      </div> <!-- /container -->
+
+    </main>
+
+    <footer class="container">
+      <p>&copy; Nicholas Hirons 2018</p>
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+
+  </body>
+
+</html>
