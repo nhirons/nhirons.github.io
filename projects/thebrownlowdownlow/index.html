@@ -197,7 +197,7 @@
           Note that because of the way we have done inference by only allocating votes in the exact same proportion as the ground truths, in each vote category F1-score = precision = recall.
           <h2>Model validation</h2>
           <p>
-          We performed hyperparameter grid search across a number of classification models with a probabilistic output (required for game ranking and votes): Gaussian Naive Bayes, Logistic Regression, Decision Trees, Random Forests. In the future it would be great to incorporate SVMs by ranking players within a game by distance to the separating hyperplane, but given we are just setting a baseline right now. Given resource constraints (i.e. my MacBook Air), we used a reduced 30 bootstrap samples to compare models. The top two performing models on the validation set are below:
+          We performed hyperparameter grid search across a number of classification models with a probabilistic output (required for game ranking and votes): Gaussian Naive Bayes, Logistic Regression, Decision Trees, Random Forests. In the future it would be great to incorporate SVMs by ranking players within a game by distance to the separating hyperplane, but given we are just setting a baseline right now it can wait. Due to resource constraints (i.e. my MacBook Air), we used a reduced 30 bootstrap samples to compare models. The top two performing models on the validation set are below:
           </p>
           <ol style="list-style: decimal inside;">
             <li>Logistic Regression with L2 penalty and C = 1</li>
