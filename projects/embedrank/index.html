@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Nicholas Hirons</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <style>
+      body {
+        padding-top: 54px;
+      }
+      @media (min-width: 992px) {
+        body {
+          padding-top: 56px;
+        }
+      }
+
+    </style>
+
+  </head>
+
+  <body>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
+      <div class="container">
+        <a class="navbar-brand" href="/">Nicholas Hirons</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarResponsive">
+          <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="/">Home
+              </a>
+            </li>
+            <li class="nav-item dropdown active">
+              <a class="nav-link dropdown-toggle" href="#" id="dropdown01" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Projects
+                <span class="sr-only">(current)</span>
+              </a>
+              <div class="dropdown-menu" aria-labelledby="dropdown01">
+                <a class="dropdown-item" href="/projects/">View all projects</a>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item" href="/projects/energydisaggregation">Energy Disaggregation</a>
+                <a class="dropdown-item" href="/projects/thebrownlowdownlow">The Brownlow Downlow</a>
+                <a class="dropdown-item" href="/projects/carserviceoperations">Car Service Operations</a>
+              </div>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/resume">Resume</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/about">About</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Page Content -->
+    <main role="main">
+
+      <!-- Main jumbotron for a primary marketing message or call to action -->
+      <div class="jumbotron">
+        <div class="container">
+          <div class="col-md-8 mx-auto">
+            <h1 class="display-4">Energy Disaggregation.</h1>
+            <p>Improving on REDD benchmarks using variational autoencoders.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="container">
+        <div class="col-md-8 mx-auto">
+          <h2>Introduction</h2>
+          <p>Energy disaggregation (also referred to as non-intrusive load monitoring or NILM) involves taking the aggregate energy signal from a household (for example, data from a smart meter), and inferring which devices/appliances are being used and how much they are using at any given point in time.</p>
+          <figure class="text-center">
+            <img src="img/aggregated_signal.png" class="img-fluid w-50 mx-auto" alt="Aggregate signal" />
+            <figcaption class="figure-caption">An aggregate household energy signal.</figcaption>
+          </figure>
+          <figure class="text-center">
+            <img src="img/disaggregated_signal.png" class="img-fluid w-50 mx-auto" alt="Disaggregated signal" />
+            <figcaption class="figure-caption">A household energy signal disaggregated into appliance components.</figcaption>
+          </figure>
+          <h2>Background</h2>
+          <p>
+          The <a href="http://redd.csail.mit.edu/">Reference Energy Disaggregation Data Set (REDD)</a> was released in 2011. It contains several weeks of power data for 6 different homes, along with data for individual appliance consumption for each house (typically around 15-20 devices).</p>
+          <p>In 2014, the <a href="http://nilmtk.github.io/">Non Intrusive Load Monitoring Toolkit (NILMTK)</a> was released. At the time, state of the art approaches relied on discrete methods, predominantly combinatorial optimization and factorial hidden Markov models.</p>
+          <p> In 2015, Jack Kelly released <a href="https://arxiv.org/abs/1507.06594">Neural NILM</a>, applying neural networks to energy disaggregation, implementing autoencoders, LSTMs and a "rectangles" based approach (which I thought was a really novel and interesting one) on the UK DALE data set (another energy disaggregation data set). Broadly speaking, the autoencoders outperformed LSTMs. While the "rectangles" performance was comparable to autoencoders, it still enforced discreteness on the predictions and so we will ignore it for the purposes of our project.</p>
+          <p>Since Neural NILM, there have been a number of different deep learning efforts aiming to either improve on Jack Kelly's results, or implement his approaches on other data sets. In this project, I aim to improve on a traditional autoencoder approach by using variational autoencoders.</p>
+          <h2>Why autoencoders don't really work</h2>
+          <p>
+          The general idea of an autoencoder is a neural network that takes some higher dimensional vector, encodes that vector to some lower dimensional space, decodes that encoded representation and tries to recover the same, original, high dimensional vector. In the energy disaggregation setting, instead of recovering the original energy signal, we try to recover an individual appliance signal.</p>
+          <p>While you usually see it as one network, there are really two parts here: an encoder and a decoder. People usually think about them in the context of compression and decompression, and this intuitively makes sense (i.e. reducing the dimensionality of your data).</p>
+          <figure class="text-center">
+            <img src="img/disaggregating-autoencoder.png" class="img-fluid w-75 mx-auto" alt="Disaggregateing autoencoder" />
+            <figcaption class="figure-caption">The basic idea of a disaggregating autoencoder.</figcaption>
+          </figure>
+          <p>The issue is in practice, they don't work particularly well for a lot of problems. The (very) general <a href="http://kvfrans.com/variational-autoencoders-explained/">idea</a> is that autoencoders tend to "cheat", memorizing vectors they are trained on by mapping them to a somewhat arbitrary point in the lower dimensional encoded space before decoding back to the original vector. While the weights will continue to adjust during training to minimize reconstruction error, the encoded representation itself isn't particularly meaningful. The consequences of this are:
+          </p>
+          <ol style="list-style: decimal inside;">
+            <li>Similar input vectors do not necessarily map to similar encoded vectors</li>
+            <li>Autoencoders are data-specific (i.e. they don't generalize well)</li>
+          </ol>
+          <p>
+          So how can we get more meaningful, generalizable latent representations of our input vectors, and will this also improve our reconstruction error?</p>
+          <h2>Variational autoencoders</h2>
+          <p>The simplest way to think about variational autoencoders is that we add Gaussian noise in the latent space to encourage efficient, meaningful representations of our data. With the addition of noise, our encoder is forced to map similar vectors to similar points in the latent space, so that our decoder can still get enough information from that latent representation to reconstruct a close approximation of those vectors.</p>
+          <figure class="text-center">
+            <img src="img/mnist-latent-space.gif" class="img-fluid w-75 mx-auto" alt="MNIST in latent space" />
+            <figcaption class="figure-caption mx-auto w-75">Similar MNIST digits in 28x28 = 784-dimensional space are encouraged to lie close together in a 2D latent space. Thanks to <a href="https://jaan.io/what-is-variational-autoencoder-vae-tutorial/">Jaan Altosaar</a>. </figcaption>
+          </figure>
+          <p>We can't just add any old noise, however, otherwise our encoder could still map vectors arbitrarily far away so that the noise would have no bearing. In fact, we change the latent representation by encoding mean and standard deviation vectors and then sampling from it:</p>
+          <figure class="text-center">
+            <img src="img/cat-vae.jpg" class="img-fluid w-100 mx-auto" alt="VAE structure" />
+            <figcaption class="figure-caption mx-auto w-100">Variational autoencoder structure. Thanks to <a href="http://kvfrans.com/variational-autoencoders-explained/">Kevin Frans</a>. </figcaption>
+          </figure>
+          <p>Furthermore, we add a penalty term to our loss function called the KL-divergence term. Without going into the derivation or math, this penalty term encourages our latent vector to approximate a unit Gaussian.</p>
+          <p>Now we can let the network decide the best trade-off between reconstruction error and ensuring that the latent representation is information-rich. The details of KL-divergence can be found elsewhere, but I couldn't find a visualization of the loss surface anywhere. So I made one quickly online below:</p>
+          <figure class="text-center">
+            <img src="img/kl-divergence-loss.png" class="img-fluid w-75 mx-auto" alt="VAE structure" />
+            <figcaption class="figure-caption mx-auto w-75">KL-divergence. x is the mean, y is the stddev and z is our loss surface.</figcaption>
+          </figure>
+          <p>
+          Above we can see that our KL-divergence term is at a minimum of 0 when the mean is 0 and standard deviation is 1 (i.e. the unit Gaussian). Furthermore, we see that our loss rapidly approaches infinity for small standard deviations.</p>
+          <h2>Preliminary results</h2>
+          <p>Long story short, variational autoencoders encourage more information-rich latent representations that generally outperform tradiational autoencoders. I've been able to use them for energy disaggregation, with improvements on REDD of around 20%:</p>
+          <figure class="text-center">
+            <img src="img/tensorboard.png" class="img-fluid w-100 mx-auto" alt="VAE losses" />
+            <figcaption class="figure-caption mx-auto w-100">Learning curves for House 1 Refrigerator in <a href="https://www.tensorflow.org/get_started/graph_viz">TensorBoard</a>. Blue line is a prototype VAE.</figcaption>
+          </figure>
+          <p>
+          In the coming weeks I'll be finishing the training on the top 5 appliances for each house to enable both better benchmark comparison, as well as some nicer visuals of disaggregated energy signals. Stay tuned!</p>
+
+        </div>
+
+        <hr>
+
+      </div> <!-- /container -->
+
+    </main>
+
+    <footer class="container">
+      <p>&copy; Nicholas Hirons 2018</p>
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+
+  </body>
+
+</html>
