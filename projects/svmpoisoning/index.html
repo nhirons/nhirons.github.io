@@ -12,6 +12,7 @@
 
     <!-- Bootstrap core CSS -->
     <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-MML-AM_CHTML' async></script>
 
     <!-- Custom styles for this template -->
     <style>
@@ -75,8 +76,8 @@
       <div class="jumbotron">
         <div class="container">
           <div class="col-md-8 mx-auto">
-            <h1 class="display-4">Energy Disaggregation.</h1>
-            <p>Improving on REDD benchmarks using variational autoencoders.</p>
+            <h1 class="display-4">SVM Poisoning.</h1>
+            <p>Gradient ascent-based attacks to maximize test error.</p>
           </div>
         </div>
       </div>
@@ -84,64 +85,125 @@
       <div class="container">
         <div class="col-md-8 mx-auto">
           <h2>Introduction</h2>
-          <p>Energy disaggregation (also referred to as non-intrusive load monitoring or NILM) involves taking the aggregate energy signal from a household (for example, data from a smart meter), and inferring which devices/appliances are being used and how much they are using at any given point in time.</p>
+          <p> For this project, I reimplemented the majority of <a href="https://arxiv.org/abs/1206.6389">Poisoning Attacks against Support Vector Machines</a> (Biggio et al.). Due to computational constraints, I limited the implementation to linear SVMs, but the extension to non-linear kernel SVMs (detailed in the paper) is fairly straightforward; with a small enough step size, only the gradient term needs to be changed. From the abstract: </p>
+          <blockquote class="blockquote">
+            <p>We investigate a family of poisoning attacks against Support Vector Machines (SVM). Such attacks inject specially crafted training data that increases the SVM's test error. Central to the motivation for these attacks is the fact that most learning algorithms assume that their training data comes from a natural or well-behaved distribution. However, this assumption does not generally hold in security-sensitive settings. As we demonstrate, an intelligent adversary can, to some extent, predict the change of the SVM's decision function due to malicious input and use this ability to construct malicious data. </p>
+            <p>The proposed attack uses a gradient ascent strategy in which the gradient is computed based on properties of the SVM's optimal solution. This method can be kernelized and enables the attack to be constructed in the input space even for non-linear kernels. We experimentally demonstrate that our gradient ascent procedure reliably identifies good local maxima of the non-convex validation error surface, which significantly increases the classifier's test error.</p>
+          </blockquote>
+          <h2>Building understanding with 2D data</h2>
+          <p>We begin by generating a training set of 2D data and fitting a linear SVM. For this project, we set our hyperparameter C = 2.0.</p>
           <figure class="text-center">
-            <img src="img/aggregated_signal.png" class="img-fluid w-50 mx-auto" alt="Aggregate signal" />
-            <figcaption class="figure-caption">An aggregate household energy signal.</figcaption>
+            <img src="img/2D_with_support_vectors.png" class="img-fluid w-50 mx-auto" alt="Aggregate signal" />
+            <figcaption class="figure-caption">Optimal separating hyperplane with support vectors (both margin and error support) labels with a star.</figcaption>
+          </figure>
+          <p>We also generate a test set of 2D data. Our goal, as an adversarial agent, is to maximize the hinge loss of our test set, by adding one additional point to our training data. We define our hinge loss on the test set, as a function of our adversarial point x_c as:</p>
+          \[L(x_c) = \sum_{k = 1}^m (1 - y_k f(x_k;x_c))_+\]
+          <p>By repeatedly fitting SVMs on the training set, with an additional adversarial point, we can plot the test set hinge loss with respect to the location of the adversarial point. </p>
+          <figure class="text-center">
+            <img src="img/2D_hinge_loss_surface.png" class="img-fluid w-50 mx-auto" alt="2D hinge loss surface" />
+            <figcaption class="figure-caption">Our test set hinge loss with respect to the location of our adversarial point in the training set.</figcaption>
           </figure>
           <figure class="text-center">
-            <img src="img/disaggregated_signal.png" class="img-fluid w-50 mx-auto" alt="Disaggregated signal" />
-            <figcaption class="figure-caption">A household energy signal disaggregated into appliance components.</figcaption>
+            <img src="img/3D_hinge_loss_surface.png" class="img-fluid w-100 mx-auto" alt="Hinge loss surface" />
           </figure>
-          <h2>Background</h2>
-          <p>
-          The <a href="http://redd.csail.mit.edu/">Reference Energy Disaggregation Data Set (REDD)</a> was released in 2011. It contains several weeks of power data for 6 different homes, along with data for individual appliance consumption for each house (typically around 15-20 devices).</p>
-          <p>In 2014, the <a href="http://nilmtk.github.io/">Non Intrusive Load Monitoring Toolkit (NILMTK)</a> was released. At the time, state of the art approaches relied on discrete methods, predominantly combinatorial optimization and factorial hidden Markov models.</p>
-          <p> In 2015, Jack Kelly released <a href="https://arxiv.org/abs/1507.06594">Neural NILM</a>, applying neural networks to energy disaggregation, implementing autoencoders, LSTMs and a "rectangles" based approach (which I thought was a really novel and interesting one) on the UK DALE data set (another energy disaggregation data set). Broadly speaking, the autoencoders outperformed LSTMs. While the "rectangles" performance was comparable to autoencoders, it still enforced discreteness on the predictions and so we will ignore it for the purposes of our project.</p>
-          <p>Since Neural NILM, there have been a number of different deep learning efforts aiming to either improve on Jack Kelly's results, or implement his approaches on other data sets. In this project, I aim to improve on a traditional autoencoder approach by using variational autoencoders.</p>
-          <h2>Why autoencoders don't really work</h2>
-          <p>
-          The general idea of an autoencoder is a neural network that takes some higher dimensional vector, encodes that vector to some lower dimensional space, decodes that encoded representation and tries to recover the same, original, high dimensional vector. In the energy disaggregation setting, instead of recovering the original energy signal, we try to recover an individual appliance signal.</p>
-          <p>While you usually see it as one network, there are really two parts here: an encoder and a decoder. People usually think about them in the context of compression and decompression, and this intuitively makes sense (i.e. reducing the dimensionality of your data).</p>
-          <figure class="text-center">
-            <img src="img/disaggregating-autoencoder.png" class="img-fluid w-75 mx-auto" alt="Disaggregateing autoencoder" />
-            <figcaption class="figure-caption">The basic idea of a disaggregating autoencoder.</figcaption>
-          </figure>
-          <p>The issue is in practice, they don't work particularly well for a lot of problems. The (very) general <a href="http://kvfrans.com/variational-autoencoders-explained/">idea</a> is that autoencoders tend to "cheat", memorizing vectors they are trained on by mapping them to a somewhat arbitrary point in the lower dimensional encoded space before decoding back to the original vector. While the weights will continue to adjust during training to minimize reconstruction error, the encoded representation itself isn't particularly meaningful. The consequences of this are:
-          </p>
+          <p>With these 2D and 3D plots, we observe two things:</p>
           <ol style="list-style: decimal inside;">
-            <li>Similar input vectors do not necessarily map to similar encoded vectors</li>
-            <li>Autoencoders are data-specific (i.e. they don't generalize well)</li>
+            <li>Given a linear SVM, we can trivially maximize our test hinge loss by moving the adversary arbitrarily far away from the separating hyperplane, on the side opposite to its true label.</li>
+            <li>The loss surface is non-convex.</li>
           </ol>
-          <p>
-          So how can we get more meaningful, generalizable latent representations of our input vectors, and will this also improve our reconstruction error?</p>
-          <h2>Variational autoencoders</h2>
-          <p>The simplest way to think about variational autoencoders is that we add Gaussian noise in the latent space to encourage efficient, meaningful representations of our data. With the addition of noise, our encoder is forced to map similar vectors to similar points in the latent space, so that our decoder can still get enough information from that latent representation to reconstruct a close approximation of those vectors.</p>
+          <p>While the linear case is clearly unbounded, we will still use this setting as it simplifies both the derivation and computation. As outlined in the paper, the extension to non-linear kernels like a Gaussian RBF is straightforward, and the adversary can find satisfactory (local) maxima simply by changing the gradient function.</p>
+          <h2>First pass: Gradient approximation by finite differences</h2>
+          <p>My first, fairly naive attempt, involved intializing the adversarial point by selecting a point in the negative set and flipping its label to positive. Then, the hinge loss gradient with respect to that adversarial point can be calculated using finite differences:</p>
+          \[\frac{\partial}{\partial x_i} f(x) \approx \frac{f(x + \frac{1}{2}h e_i) - f(x - \frac{1}{2}h e_i)}{h}\]
+          <p>Using a gradient approximation calculated from finite differences, you can use any optimizer. Obviously state-of-the-art optimizers like Adam will work best, but I implemented a hacky one from scratch that involved line search and random step directions when the gradient became negligible. This worked well enough, but in the future I'll definitely stick to stronger out-of-the-box tools.</p>
           <figure class="text-center">
-            <img src="img/mnist-latent-space.gif" class="img-fluid w-75 mx-auto" alt="MNIST in latent space" />
-            <figcaption class="figure-caption mx-auto w-75">Similar MNIST digits in 28x28 = 784-dimensional space are encouraged to lie close together in a 2D latent space. Thanks to <a href="https://jaan.io/what-is-variational-autoencoder-vae-tutorial/">Jaan Altosaar</a>. </figcaption>
+            <img src="img/finite_difference_result.png" class="img-fluid w-50 mx-auto" alt="Finite difference result" />
+            <figcaption class="figure-caption">The adversary (black, but belonging to the blue/positive class) after 100 iterations of gradient ascent.</figcaption>
           </figure>
-          <p>We can't just add any old noise, however, otherwise our encoder could still map vectors arbitrarily far away so that the noise would have no bearing. In fact, we change the latent representation by encoding mean and standard deviation vectors and then sampling from it:</p>
+          <p>The main drawback of using finite differences is that it involves fitting 2 SVMs to the training set at each iteration just to work out the gradient, and even more if you used my naive line-search and random steps to escape local optima! The goal of the paper is to avoid this, and instead explicitly calculate the gradient with respect to the adversary.</p>
+          <h2>Second pass: Explicit calculation of gradient</h2>
+          <p>Recall that, for (1) margin support, (2) error support and (3) reserve vectors respectively we have the following equations:</p>
+          \[y_i (x_i^\top \beta + \beta_0) = 1 \quad (1)\]
+          \[y_i (x_i^\top \beta + \beta_0) < 1 \quad (2)\]
+          \[y_i (x_i^\top \beta + \beta_0) > 1 \quad (3)\]
+          <p> The authors assume that for small perturbations of our adversarial point, the margin support vectors do not change:</p>
+          $$ \begin{align} y_i (x_i^\top \beta(x_c) + \beta_0(x_c)) &= 1 \\
+          y_i (x_i^\top \beta(x_c') + \beta_0(x_c')) &= 1\end{align} $$
+          <p>Where our beta weights are a function of our adversarial point. We can also define our decision function f in terms of both primal and dual variables:</p>
+          $$ \begin{align} f(x;x_c) &= x^\top \beta(x_c) + \beta_0(x_c) \\
+          f(x;x_c) &= \left( \sum_{i = 1}^n \alpha_i y_i x_i + \alpha_c y_c x_c \right)^\top x + b \end{align} $$
+          <h3>Scalar conditions</h3>
+          <p>Now we will define a new variable, Q, that will be useful in the calculation of our gradient:</p>
+          $$ \begin{align} Q_{ij} &= y_j y_i x_j^T x_i \\
+          Q_{ic} &= y_c y_i x_c^T x_i \\
+          y_i f(x_i;x_c) &= \sum_{j = 1}^n Q_{ij} \alpha_j + Q_{ic} \alpha_c + y_i b \end{align}$$
+          <p>This final equation will be useful, as it is the part of a test point's hinge loss with respect to the adversarial point. </p>
+          <p>Given our previous assumptions, we know that for a support vector (x_i, y_i), yf will always be 1, and so the partial derivative with respect to a component of our adversarial point will always be 0:</p>
+          $$ \begin{align}
+          x_c &= (u_1,\dots,u_d) \\
+          x_i &= (v_1,\dots,v_d) \\
+          \frac{\partial}{\partial u_l} y_i f(x_i;x_c) &= \sum_{j = 1}^n Q_{ij} \frac{\partial \alpha_i}{\partial u_l} + Q_{ic} \frac{\partial \alpha_c}{\partial u_l} + \frac{\partial Q_{ic}}{\partial u_l} \alpha_c + y_i \frac{\partial b}{\partial u_l}= 0 \\
+          \frac{\partial Q_{ic}}{\partial u_l} &= y_c y_i v_l
+          \end{align} $$
+          <p> Our other optimality condition (from the dual problem) must also hold, and we can take the derivative to establish another useful condition:</p>
+          $$ \begin{align}
+          \sum_{i = 1}^n \alpha_i y_i + \alpha_c y_c &= 0 \\  
+          \sum_{i = 1}^n y_i \frac{\partial \alpha_i}{\partial u_l} +  y_c \frac{\partial \alpha_c}{\partial u_l} &= 0 \end{align} $$
+          <h3>Vector conditions</h3>
+          If we define the following variables below, we can convert our conditions from summations over scalars to vector notation:
+          $$ \begin{align}
+          q_{is}^\top &=
+          \begin{bmatrix}
+          y_1 y_i x_1^T x_i & y_2 y_i x_2^T x_i & \dots & y_n y_c x_n^T x_c
+          \end{bmatrix} \\
+          y &=
+          \begin{bmatrix}
+          y_s \\
+          y_c
+          \end{bmatrix} \\
+          \gamma_i &= y_c y_i v_l \\
+          q_{is}^\top \frac{\partial \alpha}{\partial u_l} + \gamma_i \alpha_c + y_i \frac{\partial b}{\partial u_l} &= 0 \\
+          y^\top \frac{\partial \alpha}{\partial u_l} &= 0 
+          \end{align} $$
+          <h3>Matrix conditions</h3>
+          We can now calculate the partial derivative of our bias term, as well as our dual alpha weights (i.e. point-wise weights):
+          $$ \begin{align}
+          A &= 
+          \begin{bmatrix}
+          0 & y_s^\top  \\
+          y_s & Q_{ss}
+          \end{bmatrix} \\
+          b &= 
+          \begin{bmatrix}
+          0 \\
+          -\frac{\partial Q_{sc}}{\partial u_l} \alpha_c
+          \end{bmatrix} \\
+          A \begin{bmatrix}
+          \frac{\partial \beta}{\partial u_l} \\
+          \frac{\partial \alpha}{\partial u_l}
+          \end{bmatrix} &=
+          b \\
+          \end{align} $$
+          <p>Where Q_ss denotes a matrix whose i,jth entry corresponds to (y_i y_j x_i^T x_j) of the i-th and j-th margin support vectors, y_s is the vector containing only the margin support vector labels, dQ_sc/u_l is a vector whose dimension is the number of margin support vectors, such that the i-th element has dQ_ic/u_l, the partial derivative of the i-th support vector.</p>
+          <h2>Explicit gradient ascent on MNIST</h2>
+          <p>With the above, we can examine how this adversarial point looks using an SVM classifier trained to differentiate 7's an 9's:</p>
           <figure class="text-center">
-            <img src="img/cat-vae.jpg" class="img-fluid w-100 mx-auto" alt="VAE structure" />
-            <figcaption class="figure-caption mx-auto w-100">Variational autoencoder structure. Thanks to <a href="http://kvfrans.com/variational-autoencoders-explained/">Kevin Frans</a>. </figcaption>
+            <img src="img/original_7.png" class="img-fluid w-50 mx-auto" alt="Original" />
+            <figcaption class="figure-caption">Our original 7 that we initialize our adversary at.</figcaption>
           </figure>
-          <p>Furthermore, we add a penalty term to our loss function called the KL-divergence term. Without going into the derivation or math, this penalty term encourages our latent vector to approximate a unit Gaussian.</p>
-          <p>Now we can let the network decide the best trade-off between reconstruction error and ensuring that the latent representation is information-rich. The details of KL-divergence can be found elsewhere, but I couldn't find a visualization of the loss surface anywhere. So I made one quickly online below:</p>
           <figure class="text-center">
-            <img src="img/kl-divergence-loss.png" class="img-fluid w-75 mx-auto" alt="VAE structure" />
-            <figcaption class="figure-caption mx-auto w-75">KL-divergence. x is the mean, y is the stddev and z is our loss surface.</figcaption>
+            <img src="img/perturbed_7.png" class="img-fluid w-50 mx-auto" alt="Perturbed" />
+            <figcaption class="figure-caption">Our perturbed 7 after 100 iterations maximizing test set hinge loss.</figcaption>
           </figure>
-          <p>
-          Above we can see that our KL-divergence term is at a minimum of 0 when the mean is 0 and standard deviation is 1 (i.e. the unit Gaussian). Furthermore, we see that our loss rapidly approaches infinity for small standard deviations.</p>
-          <h2>Preliminary results</h2>
-          <p>Long story short, variational autoencoders encourage more information-rich latent representations that generally outperform tradiational autoencoders. I've been able to use them for energy disaggregation, with improvements on REDD of around 20%:</p>
           <figure class="text-center">
-            <img src="img/tensorboard.png" class="img-fluid w-100 mx-auto" alt="VAE losses" />
-            <figcaption class="figure-caption mx-auto w-100">Learning curves for House 1 Refrigerator in <a href="https://www.tensorflow.org/get_started/graph_viz">TensorBoard</a>. Blue line is a prototype VAE.</figcaption>
+            <img src="img/difference.png" class="img-fluid w-50 mx-auto" alt="Difference" />
+            <figcaption class="figure-caption">The difference between the two images clearly shows the adversary adding "9-like" noise.</figcaption>
           </figure>
-          <p>
-          In the coming weeks I'll be finishing the training on the top 5 appliances for each house to enable both better benchmark comparison, as well as some nicer visuals of disaggregated energy signals. Stay tuned!</p>
+
+
+
+
+          
 
         </div>
 
