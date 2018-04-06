@@ -13,6 +13,8 @@
     <!-- Bootstrap core CSS -->
     <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
 
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-MML-AM_CHTML' async></script>
+
     <!-- Custom styles for this template -->
     <style>
       body {
@@ -75,8 +77,8 @@
       <div class="jumbotron">
         <div class="container">
           <div class="col-md-8 mx-auto">
-            <h1 class="display-4">Energy Disaggregation.</h1>
-            <p>Improving on REDD benchmarks using variational autoencoders.</p>
+            <h1 class="display-4">EmbedRank.</h1>
+            <p>Can word importance be derived from a word embedding?</p>
           </div>
         </div>
       </div>
@@ -84,64 +86,81 @@
       <div class="container">
         <div class="col-md-8 mx-auto">
           <h2>Introduction</h2>
-          <p>Energy disaggregation (also referred to as non-intrusive load monitoring or NILM) involves taking the aggregate energy signal from a household (for example, data from a smart meter), and inferring which devices/appliances are being used and how much they are using at any given point in time.</p>
-          <figure class="text-center">
-            <img src="img/aggregated_signal.png" class="img-fluid w-50 mx-auto" alt="Aggregate signal" />
-            <figcaption class="figure-caption">An aggregate household energy signal.</figcaption>
-          </figure>
-          <figure class="text-center">
-            <img src="img/disaggregated_signal.png" class="img-fluid w-50 mx-auto" alt="Disaggregated signal" />
-            <figcaption class="figure-caption">A household energy signal disaggregated into appliance components.</figcaption>
-          </figure>
-          <h2>Background</h2>
-          <p>
-          The <a href="http://redd.csail.mit.edu/">Reference Energy Disaggregation Data Set (REDD)</a> was released in 2011. It contains several weeks of power data for 6 different homes, along with data for individual appliance consumption for each house (typically around 15-20 devices).</p>
-          <p>In 2014, the <a href="http://nilmtk.github.io/">Non Intrusive Load Monitoring Toolkit (NILMTK)</a> was released. At the time, state of the art approaches relied on discrete methods, predominantly combinatorial optimization and factorial hidden Markov models.</p>
-          <p> In 2015, Jack Kelly released <a href="https://arxiv.org/abs/1507.06594">Neural NILM</a>, applying neural networks to energy disaggregation, implementing autoencoders, LSTMs and a "rectangles" based approach (which I thought was a really novel and interesting one) on the UK DALE data set (another energy disaggregation data set). Broadly speaking, the autoencoders outperformed LSTMs. While the "rectangles" performance was comparable to autoencoders, it still enforced discreteness on the predictions and so we will ignore it for the purposes of our project.</p>
-          <p>Since Neural NILM, there have been a number of different deep learning efforts aiming to either improve on Jack Kelly's results, or implement his approaches on other data sets. In this project, I aim to improve on a traditional autoencoder approach by using variational autoencoders.</p>
-          <h2>Why autoencoders don't really work</h2>
-          <p>
-          The general idea of an autoencoder is a neural network that takes some higher dimensional vector, encodes that vector to some lower dimensional space, decodes that encoded representation and tries to recover the same, original, high dimensional vector. In the energy disaggregation setting, instead of recovering the original energy signal, we try to recover an individual appliance signal.</p>
-          <p>While you usually see it as one network, there are really two parts here: an encoder and a decoder. People usually think about them in the context of compression and decompression, and this intuitively makes sense (i.e. reducing the dimensionality of your data).</p>
-          <figure class="text-center">
-            <img src="img/disaggregating-autoencoder.png" class="img-fluid w-75 mx-auto" alt="Disaggregateing autoencoder" />
-            <figcaption class="figure-caption">The basic idea of a disaggregating autoencoder.</figcaption>
-          </figure>
-          <p>The issue is in practice, they don't work particularly well for a lot of problems. The (very) general <a href="http://kvfrans.com/variational-autoencoders-explained/">idea</a> is that autoencoders tend to "cheat", memorizing vectors they are trained on by mapping them to a somewhat arbitrary point in the lower dimensional encoded space before decoding back to the original vector. While the weights will continue to adjust during training to minimize reconstruction error, the encoded representation itself isn't particularly meaningful. The consequences of this are:
+          <p>This exploration was motivated by work with Intuit through Machine Learning at Berkeley. The goal was to investigate some novel methods for keyword extraction by using a word embedding space. EmbedRank is inspired by <a href="http://www.aclweb.org/anthology/W04-3252">TextRank</a> which is itself inspired by Google's infamous <a href="http://ilpubs.stanford.edu:8090/422/1/1999-66.pdf">PageRank</a>.
+
+          </p> 
+          <h2>Word Embeddings</h2>
+          <p>Representing words as vectors is a key step before performing any further statistial analysis or natural language. The simplest representation of a word is simply a one-hot encoded vector of the entire dictionary. While this can be suprisingly useful in a lot of contexts, there is an obvious motivation in NLP to represent words as vectors that encode both synctatic and semantic information. While there are more recent embedding methods like <a href="https://nlp.stanford.edu/projects/glove/">GloVe</a>, I'll briefly explain the most common embedding method, <a href="https://arxiv.org/pdf/1301.3781.pdf">word2vec</a>.</p>
+          <h3>word2vec</h3>
+          <p>At a high level, word2vec can be thought of as a single hidden layer "autoencoder", where instead of mapping a word to itself, we map it to surrounding context words (or vice versa). If we represents our words as a one-hot encoded dictionary vector, we can learn to represent these words as the outputs of the hidden layer in two ways:</p>
           </p>
           <ol style="list-style: decimal inside;">
-            <li>Similar input vectors do not necessarily map to similar encoded vectors</li>
-            <li>Autoencoders are data-specific (i.e. they don't generalize well)</li>
+            <li>Continuous bag of words (CBOW): Using surrounding context words to predict a center target word.</li>
+            <li>Skip-gram: Using a center word to predict surrounding context words.</li>
           </ol>
           <p>
-          So how can we get more meaningful, generalizable latent representations of our input vectors, and will this also improve our reconstruction error?</p>
-          <h2>Variational autoencoders</h2>
-          <p>The simplest way to think about variational autoencoders is that we add Gaussian noise in the latent space to encourage efficient, meaningful representations of our data. With the addition of noise, our encoder is forced to map similar vectors to similar points in the latent space, so that our decoder can still get enough information from that latent representation to reconstruct a close approximation of those vectors.</p>
+          <p>In deciding "surrounding" words, we select a window-size hyperparameter. For example, a window size of 2 would use 2 words before and 2 words after the center word for training.</p>
           <figure class="text-center">
-            <img src="img/mnist-latent-space.gif" class="img-fluid w-75 mx-auto" alt="MNIST in latent space" />
-            <figcaption class="figure-caption mx-auto w-75">Similar MNIST digits in 28x28 = 784-dimensional space are encouraged to lie close together in a 2D latent space. Thanks to <a href="https://jaan.io/what-is-variational-autoencoder-vae-tutorial/">Jaan Altosaar</a>. </figcaption>
+            <img src="img/word2vec.png" class="img-fluid w-75 mx-auto" alt="skip-gram and CBOW" />
+            <figcaption class="figure-caption">Skip-gram and CBOW models.</figcaption>
           </figure>
-          <p>We can't just add any old noise, however, otherwise our encoder could still map vectors arbitrarily far away so that the noise would have no bearing. In fact, we change the latent representation by encoding mean and standard deviation vectors and then sampling from it:</p>
+          <p> In the graphic above, we would have a window size of C/2. The left model represents the skip-gram and the right is CBOW. While word2vec learns the weights of both W and W', we ultimately only care about W. Given a dictionary of size V, W takes in a V-dimensional one-hot word vector and maps it to some lower, N-dimensional space. This N-dimensional space, commonly set at N = 300, is our word vector representation!
+          </p>
+          <p> There is slightly more nuance to the training of these models: CBOW relies on a naive Bayes assumption of surrounding words, and given that V can run into the millions, only a random subset of word weights are updated at each step using a nice trick called negative sampling. Further details on this can be found <a href="https://cs224d.stanford.edu/lecture_notes/notes1.pdf">here</a>.
+          <h2>Keyword Extraction</h2>
+          <p>I'll briefly three frequency and co-occurence based keyword extraction methods: sum tf-idf, Rapid Automatic Keyword Extraction, and TextRank.</p>
+          <h3>Sum tf-idf</h3>
+          <p>Term frequency - inverse document frequency (tf-idf) is a common metric for representing the importance of a word to a document. Document-level vectors of tf-idf are commonly used for a lot of text mining and NLP related tasks.</p>
+          <h4>Term frequency</h4>
+          <p>Given a term t and document d, with a total of n words in the document, the simplest metric for term frequency is simply the relative frequency:</p>
+          \[TF(t,d) = \frac{n_t}{n} \]
+          <p>To reduce issues related to longer documents, sometimes it may be more effective to use "augmented frequency" with hyperparameter K (often, K = 0.5), that scales a word depending on its proportion relative to the most frequent word:</p>
+          \[TF(t,d) = K + (1-K) \frac{n_t}{\max_{t'} n_{t'}}\]
+          <h4>Inverse document frequency</h4>
+          <p>For some corpus C containing N documents, we calculate inverse document frequency as follows:</p>
+          \[ IDF(t,C) = log \frac{N}{\sum_d 1(t \in d)}\]
+          <h4>From tf-idf to keyword extraction</h4>
+          <p>The metric can be thought of as a way to find the most relevant "rare" words to a document by penalizing commonly occurring words in the entire corpus. While mostly used to identify document keywords, or represent documents as vectors, we can do fairly simple corpus-level keyword extraction by summing the tf-idfs over every document!</p>
+          <h3>RAKE</h3>
+          <p>Rapid Automatic Keyword Extraction (RAKE) is an extremely simple and efficient method for identifying document keywords. From <a href="https://www.researchgate.net/publication/227988510_Automatic_Keyword_Extraction_from_Individual_Documents">the paper</a>:</p>
+          <blockquote class="blockquote">
+            <p>The input parameters for RAKE comprise a list of stop words (or stoplist), a set of phrase delimiters, and a set of word delimiters. RAKE uses stop words and phrase delimiters to partition the document text into candidate keywords, which are sequences of content words as they occur in the text. Co-occurrences of words within these candidate keywords are meaningful and allow us to identify word cooccurrence without the application of an arbitrarily sized sliding window.</p>
+            <p>After every candidate keyword is identified and the graph of word co-occurrences is complete, a score is calculated for each candidate keyword and defined as the sum of its member word scores. We evaluated several metrics for calculating word scores, based on the degree and frequency of word vertices in the graph: (1) word frequency (freq(w)), (2) word degree (deg(w)), and (3) ratio of degree to frequency (deg(w)/freq(w)). The score for each candidate keyword is computed as the sum of its member word scores.</p>
+          </blockquote>
+          <h3>TextRank</h3>
+          <p>TextRank is based on running PageRank on a word co-occurrence matrix of candidate words (i.e. after removing stop words or other preprocessing steps). First, we make this co-occurrence matrix S row-stochastic by scaling each row, such that in this "word digraph", the entry at (i,j) represents the probability that given you are at node/word i, you will take the edge (i,j) with probability S(i,j). We also introduce a dampening factor alpha, that represents the proportion of time following these edges (vs. randomly jumping to another node). This allows us to create a stochastic, aperiodic and irreducible matrix G:</p>
+          \[ G = \alpha S + (1-\alpha) \frac{1}{n} ee^T\]
+          <p>The TextRank solution is given by a row vector v, which represents the proportion of time a "random surfer" of this digraph would spend at each word. Rankings can then be obtained from v (in reality, the solution usually converges quite quickly):</p>
+          \[ v = vG^{\infty}\]
+          <h2>EmbedRank</h2>
+          <p>This novel method builds on embedding models and PageRank to establish word importance rankings as follows:</p>
+          </p>
+          <ol style="list-style: decimal inside;">
+            <li>Construct a word-embedding using word2vec, GloVe.</li>
+            <li>Narrow the dictionary to some candidate list (i.e. by removing stop words, or retaining only nouns/adjectives).</li>
+            <li>Build a similarity matrix between candidate words by using either cosine distance, or a kernel e.g. an RBF kernel, with a gamma hyperparameter that can be tuned as a proxy for how the edge weight in the digraph will decay with distance. Both of these are nice because they are in (0,1) and have a probabilistic flavor.</li>
+            <li>Optionally set weights to 0 depending on some similarity threshold, to enforce more sparsity (inspired by the actual PageRank matrix).</li>
+            <li>Establish row-stochasticity by scaling rows to sum to 1. This can be done either by dividing elements by row sums, or using generalized softmax with temperature tau:</li>
+            <li>Construct a word-embedding using word2vec, GloVe.</li>
+          </ol>
+          <p> Given embedded word vectors V and similarity matrix S, we define cosine similarity, RBF kernel and our row-wise softmax below (here we exclude 0 entries including the diagonals):</p>
+          \[ cos(\theta) = \frac{V_i \cdot V_j}{||V_i||||V_j||}\]
+          \[ K(V_i,V_j') = \exp(-\gamma ||V_i - V_j||^2)\]
+          \[S'_{i,j} = \frac{\exp \frac{S_{i,j} \cdot 1(S_{i,j}>0)}{\tau}}{\sum_j \exp \frac{S_{i,j} \cdot 1(S_{i,j}>0)}{\tau}} \]
+          <p>Overall, this method can be tuned to explore the tradeoff between how closely a word is associated with its nearer neighbors, and how centered it is relative to the entire embedding. This tradeoff will be influenced by the choice of kernel and hyperparameters, the thresholding and the row-wise scaling (e.g. softmax temperature). While I will aim to benchmark this method in the future, for now we are testing it with domain-specific keywords in personal finance and small business. With the dummy embedding generated in 2D space below (the relationships don't actually mean anything in this case), the following ranks were obtained:</p>
           <figure class="text-center">
-            <img src="img/cat-vae.jpg" class="img-fluid w-100 mx-auto" alt="VAE structure" />
-            <figcaption class="figure-caption mx-auto w-100">Variational autoencoder structure. Thanks to <a href="http://kvfrans.com/variational-autoencoders-explained/">Kevin Frans</a>. </figcaption>
+            <img src="img/2D-embedding-label-and-rank.png" class="img-fluid w-75 mx-auto" alt="Dummy 2D embedding" />
+            <figcaption class="figure-caption">A dummy 2D embedding with the results of EmbedRank.</figcaption>
           </figure>
-          <p>Furthermore, we add a penalty term to our loss function called the KL-divergence term. Without going into the derivation or math, this penalty term encourages our latent vector to approximate a unit Gaussian.</p>
-          <p>Now we can let the network decide the best trade-off between reconstruction error and ensuring that the latent representation is information-rich. The details of KL-divergence can be found elsewhere, but I couldn't find a visualization of the loss surface anywhere. So I made one quickly online below:</p>
-          <figure class="text-center">
-            <img src="img/kl-divergence-loss.png" class="img-fluid w-75 mx-auto" alt="VAE structure" />
-            <figcaption class="figure-caption mx-auto w-75">KL-divergence. x is the mean, y is the stddev and z is our loss surface.</figcaption>
-          </figure>
-          <p>
-          Above we can see that our KL-divergence term is at a minimum of 0 when the mean is 0 and standard deviation is 1 (i.e. the unit Gaussian). Furthermore, we see that our loss rapidly approaches infinity for small standard deviations.</p>
-          <h2>Preliminary results</h2>
-          <p>Long story short, variational autoencoders encourage more information-rich latent representations that generally outperform tradiational autoencoders. I've been able to use them for energy disaggregation, with improvements on REDD of around 20%:</p>
-          <figure class="text-center">
-            <img src="img/tensorboard.png" class="img-fluid w-100 mx-auto" alt="VAE losses" />
-            <figcaption class="figure-caption mx-auto w-100">Learning curves for House 1 Refrigerator in <a href="https://www.tensorflow.org/get_started/graph_viz">TensorBoard</a>. Blue line is a prototype VAE.</figcaption>
-          </figure>
-          <p>
-          In the coming weeks I'll be finishing the training on the top 5 appliances for each house to enable both better benchmark comparison, as well as some nicer visuals of disaggregated energy signals. Stay tuned!</p>
+          <p>From this simple example, a few preliminary observations can be made:
+          <ol style="list-style: decimal inside;">
+            <li>Words on the extremes of the embedded space, and words that are further away from others, are given the lowest rank.</li>
+            <li>The top ranked words appears closest to the centre of the embedding.</li>
+            <li>Stronger clusters of neighbors appear to improve rank.</li>
+          </ol>
+          While it's early days, I'm looking forward to exploring this method further, and hopefully arriving at some similar results to other methods mentioned earlier.</p>
+          
+
 
         </div>
 
